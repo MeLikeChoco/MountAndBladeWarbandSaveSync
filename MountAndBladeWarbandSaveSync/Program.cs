@@ -14,13 +14,14 @@ namespace MountAndBladeWarbandSaveSync
         const string SaveGameFolder = "Mount&Blade Warband Savegames/";
         static readonly string SaveGamePath = Path.Combine(DocumentsPath, SaveGameFolder);
 
+        static string _syncFolderPath;
         static string[] _modules;
 
         static void Main(string[] args)
         {
 
             var drive = GetRemoveableDrive(args);
-            var selection = GetModuleSelection();
+            var selection = GetModuleSelection(drive);
 
             Console.WriteLine("Beginning sync...");
 
@@ -38,13 +39,16 @@ namespace MountAndBladeWarbandSaveSync
         static void Sync(string drive, int selection)
         {
 
-            var firstPath = _modules[selection - 1];
+            var name = _modules[selection - 1];
+            var firstPath = Path.Combine(SaveGamePath, name);
             var firstLoc = new DirectoryInfo(firstPath);
-            var secondPath = Path.Combine(drive, SaveGameFolder, firstLoc.Name);
+            var secondPath = Path.Combine(_syncFolderPath, name);
 
-            Console.WriteLine("Module save folder not detected in selected drive. Creating one...");
+            Console.WriteLine($"Syncing {firstLoc.Name}...");
+
+            Console.WriteLine($"Module save folder, {name}, will be created if it does not exist.");
+            Directory.CreateDirectory(firstPath);
             Directory.CreateDirectory(secondPath);
-            Console.WriteLine("Module save folder created.");
 
             var secondLoc = new DirectoryInfo(secondPath);
             var firstFiles = firstLoc.GetFiles();
@@ -52,6 +56,8 @@ namespace MountAndBladeWarbandSaveSync
 
             Switcheroo(firstFiles, secondFiles, secondPath);
             Switcheroo(secondFiles, firstFiles, firstPath);
+
+            Console.WriteLine($"Syncing of {name} finished.");
 
         }
 
@@ -71,19 +77,22 @@ namespace MountAndBladeWarbandSaveSync
 
                     using (var stream = toFile.Create()) { }
 
-                }
+                    fromFile.CopyTo(toFile.FullName, true);
 
-                if ((toFile != null && fromFile.LastWriteTimeUtc.CompareTo(toFile.LastWriteTimeUtc) > 0) || toFile == null)
+                }
+                else if (fromFile.LastWriteTimeUtc.CompareTo(toFile.LastWriteTimeUtc) > 0)
                     fromFile.CopyTo(toFile.FullName, true);
 
             }
 
         }
 
-        static int GetModuleSelection()
+        static int GetModuleSelection(string drive)
         {
 
-            _modules = Directory.GetDirectories(SaveGamePath);
+            _syncFolderPath = Path.Combine(drive, SaveGameFolder);
+            _modules = Directory.GetDirectories(SaveGamePath).Concat(Directory.GetDirectories(_syncFolderPath))
+                .Select(directory => new DirectoryInfo(directory).Name).ToArray();
 
             if (!_modules.Any())
                 EndProgramWithErrorMessage("There are no savegames currently available to sync!");
@@ -92,7 +101,7 @@ namespace MountAndBladeWarbandSaveSync
             Console.WriteLine("0 - All");
 
             for (int i = 0; i < _modules.Length; i++)
-                Console.WriteLine($"{i + 1} - {new DirectoryInfo(_modules[i]).Name}");
+                Console.WriteLine($"{i + 1} - {_modules[i]}");
 
             string input;
 
