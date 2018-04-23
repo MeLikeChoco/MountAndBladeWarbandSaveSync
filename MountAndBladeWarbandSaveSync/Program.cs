@@ -44,7 +44,7 @@ namespace MountAndBladeWarbandSaveSync
             var firstLoc = new DirectoryInfo(firstPath);
             var secondPath = Path.Combine(_syncFolderPath, name);
 
-            Console.WriteLine($"Syncing {firstLoc.Name}...");
+            Console.WriteLine($"Syncing {name}...");
 
             Console.WriteLine($"Module save folder, {name}, will be created if it does not exist.");
             Directory.CreateDirectory(firstPath);
