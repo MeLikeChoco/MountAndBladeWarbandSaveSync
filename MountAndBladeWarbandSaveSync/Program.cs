@@ -59,6 +59,8 @@ namespace MountAndBladeWarbandSaveSync
 
             Console.WriteLine($"Syncing of {name} finished.");
 
+            EndProgramWithErrorMessage(null);
+
         }
 
         static void Switcheroo(FileInfo[] from, FileInfo[] to, string toDirectory)
@@ -92,7 +94,8 @@ namespace MountAndBladeWarbandSaveSync
 
             _syncFolderPath = Path.Combine(drive, SaveGameFolder);
             _modules = Directory.GetDirectories(SaveGamePath).Concat(Directory.GetDirectories(_syncFolderPath))
-                .Select(directory => new DirectoryInfo(directory).Name).ToArray();
+                .Select(directory => new DirectoryInfo(directory).Name)
+                .Distinct().ToArray();
 
             if (!_modules.Any())
                 EndProgramWithErrorMessage("There are no savegames currently available to sync!");
@@ -139,7 +142,7 @@ namespace MountAndBladeWarbandSaveSync
 
                 } while (!(char.TryParse(input, out var throwaway) && char.IsLetter(throwaway)));
 
-                drive = char.Parse(input);
+                drive = char.ToUpper(char.Parse(input));
 
             }
 
@@ -150,7 +153,8 @@ namespace MountAndBladeWarbandSaveSync
         static void EndProgramWithErrorMessage(string message)
         {
 
-            Console.Write(message);
+            Console.WriteLine(message);
+            Console.Write("Press any key to exit...");
             Console.ReadKey();
             Environment.Exit(0);
 
